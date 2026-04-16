@@ -35,4 +35,20 @@ return [
         ],
     ],
 
+    'auth_service' => [
+        'url' => env('AUTH_SERVICE_URL', 'http://127.0.0.1:8005'),
+    ],
+
+    'department_service' => [
+        'url' => env('DEPARTMENT_SERVICE_URL', 'http://127.0.0.1:8001'),
+    ],
+
+    'position_service' => [
+        'url' => env('POSITION_SERVICE_URL', 'http://127.0.0.1:8003'),
+    ],
+
+    'http' => [
+        'timeout' => (int) env('SERVICE_HTTP_TIMEOUT', 5),
+    ],
+
 ];

@@ -2,59 +2,69 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Employee;
 use App\Models\Position;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
 
 class PositionController extends Controller
 {
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        return Position::all();
+        return response()->json(
+            Position::query()
+                ->orderBy('title')
+                ->paginate($this->perPage($request))
+        );
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-         $data = $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:employees',
-        'department_id' => 'required|integer',
-        'position_id' => 'required|integer'
-    ]);
+        $position = Position::create($this->validatePosition($request));
 
-    // check department
-    $dep = Http::get('http://127.0.0.1:8002/api/departments/'.$data['department_id']);
-
-    if ($dep->failed()) {
-        return response()->json(['error' => 'Department not found'], 400);
+        return response()->json($position, 201);
     }
 
-    // 🔥 check position
-    $pos = Http::get('http://127.0.0.1:8003/api/positions/'.$data['position_id']);
-
-    if ($pos->failed()) {
-        return response()->json(['error' => 'Position not found'], 400);
+    public function show(Position $position): JsonResponse
+    {
+        return response()->json($position);
     }
 
-    return Employee::create($data);
-}
-
-    public function show($id)
+    public function update(Request $request, Position $position): JsonResponse
     {
-        return Position::findOrFail($id);
+        $position->update($this->validatePosition($request, $position));
+
+        return response()->json($position->fresh());
     }
 
-    public function update(Request $request, $id)
+    public function destroy(Position $position): JsonResponse
     {
-        $pos = Position::findOrFail($id);
-        $pos->update($request->all());
-        return $pos;
+        $position->delete();
+
+        return response()->json([
+            'message' => 'Position deleted successfully.',
+        ]);
     }
 
-    public function destroy($id)
+    private function validatePosition(Request $request, ?Position $position = null): array
     {
-        Position::destroy($id);
-        return ['message' => 'deleted'];
+        return $request->validate([
+            'title' => [
+                $position ? 'sometimes' : 'required',
+                'string',
+                'max:255',
+                Rule::unique('positions', 'title')->ignore($position?->id),
+            ],
+            'base_salary' => [
+                $position ? 'sometimes' : 'required',
+                'numeric',
+                'min:0',
+            ],
+        ]);
+    }
+
+    private function perPage(Request $request): int
+    {
+        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

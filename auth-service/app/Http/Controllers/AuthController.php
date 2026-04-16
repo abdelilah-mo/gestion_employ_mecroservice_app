@@ -1,35 +1,61 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
+    public function register(Request $request): JsonResponse
     {
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'client'
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
         ]);
 
-        return $user;
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => 'client',
+        ]);
+
+        return response()->json([
+            'message' => 'User registered successfully.',
+            'user' => $user,
+        ], 201);
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $validated = $request->validate([
+            'email' => ['required', 'string', 'email'],
+            'password' => ['required', 'string'],
+        ]);
+
+        $user = User::query()->where('email', $validated['email'])->first();
+
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+            return response()->json([
+                'message' => 'Invalid credentials.',
+            ], 401);
         }
 
-        $user = Auth::user();
+        $token = $user->createToken($request->userAgent() ?: 'api-token')->plainTextToken;
 
-        $token = $user->createToken('token')->plainTextToken;
+        return response()->json([
+            'token' => $token,
+            'token_type' => 'Bearer',
+            'user' => $user,
+        ]);
+    }
 
-        return ['token' => $token];
+    public function user(Request $request): JsonResponse
+    {
+        return response()->json($request->user());
     }
 }

@@ -1,40 +1,65 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Department;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class DepartmentController extends Controller
 {
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        return Department::all();
+        return response()->json(
+            Department::query()
+                ->orderBy('name')
+                ->paginate($this->perPage($request))
+        );
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'name' => 'required'
+        $department = Department::create($this->validateDepartment($request));
+
+        return response()->json($department, 201);
+    }
+
+    public function show(Department $department): JsonResponse
+    {
+        return response()->json($department);
+    }
+
+    public function update(Request $request, Department $department): JsonResponse
+    {
+        $department->update($this->validateDepartment($request, $department));
+
+        return response()->json($department->fresh());
+    }
+
+    public function destroy(Department $department): JsonResponse
+    {
+        $department->delete();
+
+        return response()->json([
+            'message' => 'Department deleted successfully.',
         ]);
-
-        return Department::create($data);
     }
 
-    public function show($id)
+    private function validateDepartment(Request $request, ?Department $department = null): array
     {
-        return Department::findOrFail($id);
+        return $request->validate([
+            'name' => [
+                $department ? 'sometimes' : 'required',
+                'string',
+                'max:255',
+                Rule::unique('departments', 'name')->ignore($department?->id),
+            ],
+        ]);
     }
 
-    public function update(Request $request, $id)
+    private function perPage(Request $request): int
     {
-        $dep = Department::findOrFail($id);
-        $dep->update($request->all());
-        return $dep;
-    }
-
-    public function destroy($id)
-    {
-        Department::destroy($id);
-        return ['message' => 'deleted'];
+        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

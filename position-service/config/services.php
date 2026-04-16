@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'auth_service' => [
+        'url' => env('AUTH_SERVICE_URL', 'http://127.0.0.1:8005'),
+    ],
+
+    'http' => [
+        'timeout' => (int) env('SERVICE_HTTP_TIMEOUT', 5),
+    ],
+
 ];

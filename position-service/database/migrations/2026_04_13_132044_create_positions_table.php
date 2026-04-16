@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('positions', function (Blueprint $table) {
-    $table->id();
-    $table->string('title');
-    $table->float('base_salary');
-    $table->timestamps();
-});
+        Schema::create('positions', function (Blueprint $table) {
+            $table->id();
+            $table->string('title')->unique();
+            $table->decimal('base_salary', 12, 2);
+            $table->timestamps();
+        });
     }
 
     /**

@@ -12,12 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('salaries', function (Blueprint $table) {
-    $table->id();
-    $table->unsignedBigInteger('employee_id');
-    $table->float('bonus', 10, 2);
-    $table->float('total_salary', 10, 2);
-    $table->timestamps();
-});
+            $table->id();
+            $table->unsignedBigInteger('employee_id')->index();
+            $table->decimal('bonus', 12, 2);
+            $table->decimal('total_salary', 12, 2);
+            $table->timestamps();
+        });
     }
 
     /**

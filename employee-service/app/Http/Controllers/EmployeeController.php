@@ -1,98 +1,167 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\Employee;
-use Illuminate\Http\Request;
-    use Illuminate\Support\Facades\Http;
 
-    
+use App\Models\Employee;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Validation\Rule;
+
 class EmployeeController extends Controller
 {
-private function getUserFromToken($request)
-{
-    $token = $request->header('Authorization');
+    public function index(Request $request): JsonResponse
+    {
+        return response()->json(
+            Employee::query()
+                ->orderBy('name')
+                ->paginate($this->perPage($request))
+        );
+    }
 
-    $response = Http::withHeaders([
-        'Authorization' => $token
-    ])->get('http://127.0.0.1:8005/api/user');
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $this->validateEmployee($request);
 
-    if (!$response->ok()) {
+        if ($response = $this->ensureDepartmentExists($request, (int) $validated['department_id'])) {
+            return $response;
+        }
+
+        if ($response = $this->ensurePositionExists($request, (int) $validated['position_id'])) {
+            return $response;
+        }
+
+        $employee = Employee::create($validated);
+
+        return response()->json($employee, 201);
+    }
+
+    public function show(Employee $employee): JsonResponse
+    {
+        return response()->json($employee);
+    }
+
+    public function update(Request $request, Employee $employee): JsonResponse
+    {
+        $validated = $this->validateEmployee($request, $employee);
+
+        if (array_key_exists('department_id', $validated)
+            && ($response = $this->ensureDepartmentExists($request, (int) $validated['department_id']))) {
+            return $response;
+        }
+
+        if (array_key_exists('position_id', $validated)
+            && ($response = $this->ensurePositionExists($request, (int) $validated['position_id']))) {
+            return $response;
+        }
+
+        $employee->update($validated);
+
+        return response()->json($employee->fresh());
+    }
+
+    public function destroy(Employee $employee): JsonResponse
+    {
+        $employee->delete();
+
+        return response()->json([
+            'message' => 'Employee deleted successfully.',
+        ]);
+    }
+
+    private function validateEmployee(Request $request, ?Employee $employee = null): array
+    {
+        return $request->validate([
+            'name' => [
+                $employee ? 'sometimes' : 'required',
+                'string',
+                'max:255',
+            ],
+            'email' => [
+                $employee ? 'sometimes' : 'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('employees', 'email')->ignore($employee?->id),
+            ],
+            'department_id' => [
+                $employee ? 'sometimes' : 'required',
+                'integer',
+                'min:1',
+            ],
+            'position_id' => [
+                $employee ? 'sometimes' : 'required',
+                'integer',
+                'min:1',
+            ],
+        ]);
+    }
+
+    private function ensureDepartmentExists(Request $request, int $departmentId): ?JsonResponse
+    {
+        return $this->ensureRemoteResourceExists(
+            $request,
+            'department_service',
+            "/api/departments/{$departmentId}",
+            'Selected department does not exist.',
+            'Department service is unavailable.',
+        );
+    }
+
+    private function ensurePositionExists(Request $request, int $positionId): ?JsonResponse
+    {
+        return $this->ensureRemoteResourceExists(
+            $request,
+            'position_service',
+            "/api/positions/{$positionId}",
+            'Selected position does not exist.',
+            'Position service is unavailable.',
+        );
+    }
+
+    private function ensureRemoteResourceExists(
+        Request $request,
+        string $serviceKey,
+        string $endpoint,
+        string $notFoundMessage,
+        string $serviceUnavailableMessage,
+    ): ?JsonResponse {
+        try {
+            $response = Http::acceptJson()
+                ->timeout(config('services.http.timeout', 5))
+                ->withHeaders($this->authorizationHeaders($request))
+                ->get(rtrim(config("services.{$serviceKey}.url"), '/').$endpoint);
+        } catch (ConnectionException $exception) {
+            return response()->json([
+                'message' => $serviceUnavailableMessage,
+            ], 503);
+        }
+
+        if ($response->notFound()) {
+            return response()->json([
+                'message' => $notFoundMessage,
+            ], 422);
+        }
+
+        if ($response->failed()) {
+            return response()->json([
+                'message' => 'Downstream service validation failed.',
+            ], 502);
+        }
+
         return null;
     }
 
-    return $response->json();
-} 
-
-
-public function store(Request $request)
-{
-    $user = $this->getUserFromToken($request);
-
-    if (!$user) {
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    if ($user['role'] !== 'admin') {
-        return response()->json(['error' => 'Forbidden'], 403);
-    }
-
-    $data = $request->validate([
-        'name' => 'required',
-        'email' => 'required|email|unique:employees',
-        'department_id' => 'required|integer',
-        'position_id' => 'required|integer'
-    ]);
-
-    $dep = Http::get('http://127.0.0.1:8002/api/departments/'.$data['department_id']);
-    if (!$dep->ok()) {
-        return response()->json(['error' => 'Department not found'], 400);
-    }
-
-    $pos = Http::get('http://127.0.0.1:8003/api/positions/'.$data['position_id']);
-    if (!$pos->ok()) {
-        return response()->json(['error' => 'Position not found'], 400);
-    }
-
-    return Employee::create($data);
-}
-
-    public function show($id)
+    private function authorizationHeaders(Request $request): array
     {
-        return response()->json(Employee::findOrFail($id));
+        return [
+            'Authorization' => $request->header('Authorization'),
+        ];
     }
 
-    public function update(Request $request, $id)
-{
-    $user = $this->getUserFromToken($request);
-
-    if (!$user) {
-        return response()->json(['error' => 'Unauthorized'], 401);
+    private function perPage(Request $request): int
+    {
+        return max(1, min($request->integer('per_page', 15), 100));
     }
-
-    if ($user['role'] !== 'admin') {
-        return response()->json(['error' => 'Forbidden'], 403);
-    }
-
-    $employee = Employee::findOrFail($id);
-    $employee->update($request->all());
-
-    return $employee;
-}
-
-    public function destroy(Request $request, $id)
-{
-    $user = $this->getUserFromToken($request);
-
-    if (!$user) {
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    if ($user['role'] !== 'admin') {
-        return response()->json(['error' => 'Forbidden'], 403);
-    }
-
-    Employee::destroy($id);
-
-    return response()->json(['message' => 'Deleted']);
-}
 }

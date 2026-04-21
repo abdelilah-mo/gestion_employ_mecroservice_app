@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { getEmployees } from "../services/api";
-import EmployeeForm from "../components/EmployeeForm";
+import Sidebar from "../components/Sidebar";
 import EmployeeTable from "../components/EmployeeTable";
+import AddEmployee from "./AddEmployee";
+import AddUser from "./AddUser";
+import { getEmployees } from "../services/api";
 
 export default function Dashboard({ logout }) {
+const [page, setPage] = useState("dashboard");
 const [employees, setEmployees] = useState([]);
 
 async function loadEmployees() {
 const data = await getEmployees();
-setEmployees(data.data || data);
+setEmployees(data.data || []);
 }
 
 useEffect(() => {
@@ -16,15 +19,21 @@ loadEmployees();
 }, []);
 
 return (
-<div style={{ padding: 20 }}> <h2>Dashboard</h2>
+<div style={{ display: "flex" }}> <Sidebar setPage={setPage} />
 
-  <button onClick={logout}>Logout</button>
+  <div style={{ padding: 20, flex: 1 }}>
+    <button onClick={logout}>Logout</button>
 
-  <EmployeeForm refresh={loadEmployees} />
+    {page === "dashboard" && (
+      <EmployeeTable employees={employees} refresh={loadEmployees} />
+    )}
 
-  <br />
+    {page === "addEmployee" && (
+      <AddEmployee refresh={loadEmployees} />
+    )}
 
-  <EmployeeTable employees={employees} refresh={loadEmployees} />
+    {page === "addUser" && <AddUser />}
+  </div>
 </div>
 
 );

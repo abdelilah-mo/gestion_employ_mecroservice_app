@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { createPosition, extractCollection, getPositions } from "../services/api";
+import {
+  createPosition,
+  deletePosition,
+  extractCollection,
+  getPositions,
+  updatePosition,
+} from "../services/api";
 
 function AddPosition() {
-  const [form, setForm] = useState({
-    title: "",
-    base_salary: "",
-  });
+  const [title, setTitle] = useState("");
+  const [editingPositionId, setEditingPositionId] = useState(null);
   const [positions, setPositions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,14 +33,6 @@ function AddPosition() {
     }
   }
 
-  function updateField(event) {
-    const { name, value } = event.target;
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value,
-    }));
-  }
-
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -45,16 +41,16 @@ function AddPosition() {
       setError("");
       setSuccess("");
 
-      await createPosition({
-        title: form.title,
-        base_salary: Number(form.base_salary),
-      });
+      if (editingPositionId) {
+        await updatePosition(editingPositionId, { title });
+        setSuccess("Position updated successfully.");
+      } else {
+        await createPosition({ title });
+        setSuccess("Position created successfully.");
+      }
 
-      setForm({
-        title: "",
-        base_salary: "",
-      });
-      setSuccess("Position created successfully.");
+      setTitle("");
+      setEditingPositionId(null);
       await loadPositions();
     } catch (requestError) {
       setError(requestError.message);
@@ -63,49 +59,83 @@ function AddPosition() {
     }
   }
 
+  async function handleDelete(positionId) {
+    const confirmed = window.confirm("Delete this position?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      setSuccess("");
+      await deletePosition(positionId);
+
+      if (editingPositionId === positionId) {
+        setEditingPositionId(null);
+        setTitle("");
+      }
+
+      setSuccess("Position deleted successfully.");
+      await loadPositions();
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  function startEdit(position) {
+    setEditingPositionId(position.id);
+    setTitle(position.title);
+    setSuccess("");
+    setError("");
+  }
+
+  function resetForm() {
+    setEditingPositionId(null);
+    setTitle("");
+    setSuccess("");
+    setError("");
+  }
+
   return (
     <div className="row g-4">
       <div className="col-lg-5">
         <div className="page-card p-4 p-lg-5 h-100">
-          <h2 className="h3 mb-2">Add Position</h2>
+          <h3 className="h4 mb-2">{editingPositionId ? "Edit Position" : "Add Position"}</h3>
           <p className="text-secondary mb-4">
-            Positions require a title and base salary because the backend validates both.
+            Positions appear in the employee form dropdown.
           </p>
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
           {success ? <div className="alert alert-success">{success}</div> : null}
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label className="form-label">Title</label>
+            <div className="mb-4">
+              <label className="form-label">Position title</label>
               <input
                 className="form-control"
-                name="title"
-                onChange={updateField}
+                onChange={(event) => setTitle(event.target.value)}
                 placeholder="Software Engineer"
                 required
-                value={form.title}
+                value={title}
               />
             </div>
 
-            <div className="mb-4">
-              <label className="form-label">Base salary</label>
-              <input
-                className="form-control"
-                min="0"
-                name="base_salary"
-                onChange={updateField}
-                placeholder="4500"
-                required
-                step="0.01"
-                type="number"
-                value={form.base_salary}
-              />
-            </div>
+            <div className="d-flex gap-2">
+              <button className="btn btn-primary" disabled={saving} type="submit">
+                {saving
+                  ? "Saving..."
+                  : editingPositionId
+                    ? "Update position"
+                    : "Create position"}
+              </button>
 
-            <button className="btn btn-primary" disabled={saving} type="submit">
-              {saving ? "Saving..." : "Create position"}
-            </button>
+              {editingPositionId ? (
+                <button className="btn btn-outline-secondary" onClick={resetForm} type="button">
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </form>
         </div>
       </div>
@@ -125,7 +155,7 @@ function AddPosition() {
                 <tr>
                   <th>ID</th>
                   <th>Title</th>
-                  <th>Base salary</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,8 +178,25 @@ function AddPosition() {
                 {positions.map((position) => (
                   <tr key={position.id}>
                     <td>#{position.id}</td>
-                    <td className="fw-semibold">{position.title || position.name}</td>
-                    <td>{position.base_salary ?? "-"}</td>
+                    <td className="fw-semibold">{position.title}</td>
+                    <td className="text-end">
+                      <div className="d-inline-flex gap-2">
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => startEdit(position)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => handleDelete(position.id)}
+                          type="button"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

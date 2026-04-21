@@ -1,38 +1,32 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use App\Http\Controllers\GatewayController;
 use Illuminate\Support\Facades\Route;
 
+Route::middleware('auth.api')->controller(GatewayController::class)->group(function (): void {
+    Route::get('/employees', 'employees');
+    Route::get('/employees/{path}', 'employees')->where('path', '.*');
 
-// 👤 Employees
-Route::get('/employees', function (Request $request) {
+    Route::get('/departments', 'departments');
+    Route::get('/departments/{path}', 'departments')->where('path', '.*');
 
-    $response = Http::withHeaders([
-        'Authorization' => $request->header('Authorization'),
-        'Accept' => 'application/json'
-    ])->get('http://127.0.0.1:8002/api/employees');
-    return response()->json($response->json());
+    Route::get('/positions', 'positions');
+    Route::get('/positions/{path}', 'positions')->where('path', '.*');
 });
 
-// ➕ Add Employee
-Route::post('/employees', function (Request $request) {
-    return Http::withHeaders([
-        'Authorization' => $request->header('Authorization')
-    ])->post('http://127.0.0.1:8002/api/employees', $request->all())->json();
-});
+Route::middleware(['auth.api', 'role:admin'])->controller(GatewayController::class)->group(function (): void {
+    Route::post('/employees', 'employees');
+    Route::match(['put', 'patch'], '/employees/{path}', 'employees')->where('path', '.*');
+    Route::delete('/employees/{path}', 'employees')->where('path', '.*');
 
-Route::get('/departments', function (Request $request) {
-    return Http::withHeaders([
-        'Authorization' => $request->header('Authorization'),
-        'Accept' => 'application/json'
-    ])->get(config('services.department_service.url').'/api/departments');
-});
+    Route::post('/departments', 'departments');
+    Route::match(['put', 'patch'], '/departments/{path}', 'departments')->where('path', '.*');
+    Route::delete('/departments/{path}', 'departments')->where('path', '.*');
 
+    Route::post('/positions', 'positions');
+    Route::match(['put', 'patch'], '/positions/{path}', 'positions')->where('path', '.*');
+    Route::delete('/positions/{path}', 'positions')->where('path', '.*');
 
-// positions
-Route::get('/positions', function (Request $request) {
-    return Http::withHeaders([
-        'Authorization' => $request->header('Authorization'),
-    ])->get(config('services.position_service.url').'/api/positions')->json();
+    Route::any('/salaries', 'salaries');
+    Route::any('/salaries/{path}', 'salaries')->where('path', '.*');
 });

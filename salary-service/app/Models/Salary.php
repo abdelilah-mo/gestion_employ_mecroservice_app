@@ -8,15 +8,13 @@ class Salary extends Model
 {
     protected $fillable = [
         'employee_id',
-        'bonus',
-        'total_salary',
+        'amount',
     ];
 
     protected function casts(): array
     {
         return [
-            'bonus' => 'decimal:2',
-            'total_salary' => 'decimal:2',
+            'amount' => 'decimal:2',
         ];
     }
 }

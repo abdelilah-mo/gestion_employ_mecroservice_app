@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -17,12 +18,7 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:8'],
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => 'client',
-        ]);
+        $user = User::create($this->payloadWithPassword($validated + ['role' => 'client']));
 
         return response()->json([
             'message' => 'User registered successfully.',
@@ -57,5 +53,41 @@ class AuthController extends Controller
     public function user(Request $request): JsonResponse
     {
         return response()->json($request->user());
+    }
+
+    public function index(): JsonResponse
+    {
+        return response()->json([
+            'data' => User::query()
+                ->orderBy('name')
+                ->get(),
+        ]);
+    }
+
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'string', 'min:8'],
+            'role' => ['required', Rule::in(['admin', 'client'])],
+        ]);
+
+        $user = User::create($this->payloadWithPassword($validated));
+
+        return response()->json([
+            'message' => 'User created successfully.',
+            'user' => $user,
+        ], 201);
+    }
+
+    private function payloadWithPassword(array $validated): array
+    {
+        return [
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'role' => $validated['role'],
+        ];
     }
 }

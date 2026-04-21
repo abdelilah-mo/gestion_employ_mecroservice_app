@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
             $table->string('title')->unique();
-            $table->decimal('base_salary', 12, 2);
             $table->timestamps();
         });
     }

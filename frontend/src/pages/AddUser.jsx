@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { registerUser } from "../services/api";
+import { Link, useNavigate } from "react-router-dom";
+import { createUser } from "../services/api";
 
 const initialForm = {
   name: "",
@@ -10,10 +10,10 @@ const initialForm = {
 };
 
 function AddUser() {
+  const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   function updateField(event) {
@@ -31,17 +31,14 @@ function AddUser() {
       setLoading(true);
       setError("");
       setSuccess("");
-      setNotice("");
 
-      const response = await registerUser(form);
+      await createUser(form);
       setForm(initialForm);
       setSuccess("User created successfully.");
 
-      if (response?.user?.role && response.user.role !== form.role) {
-        setNotice(
-          `The auth API saved this user as "${response.user.role}". If you expect admin creation, the backend still needs role handling.`
-        );
-      }
+      window.setTimeout(() => {
+        navigate("/users");
+      }, 600);
     } catch (requestError) {
       setError(requestError.message);
     } finally {
@@ -53,8 +50,8 @@ function AddUser() {
     <div className="row g-4">
       <div className="col-12 d-flex justify-content-between align-items-center">
         <div>
-          <h2 className="h3 mb-1">Add User</h2>
-          <p className="text-secondary mb-0">Register a new user in the auth service.</p>
+          <h3 className="h4 mb-1">Add User</h3>
+          <p className="text-secondary mb-0">Create a new authentication service user.</p>
         </div>
         <Link className="btn btn-outline-secondary" to="/users">
           View users
@@ -65,7 +62,6 @@ function AddUser() {
         <div className="page-card p-4 p-lg-5">
           {error ? <div className="alert alert-danger">{error}</div> : null}
           {success ? <div className="alert alert-success">{success}</div> : null}
-          {notice ? <div className="alert alert-warning">{notice}</div> : null}
 
           <form onSubmit={handleSubmit}>
             <div className="row g-4">

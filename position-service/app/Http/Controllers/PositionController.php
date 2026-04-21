@@ -55,11 +55,6 @@ class PositionController extends Controller
                 'max:255',
                 Rule::unique('positions', 'title')->ignore($position?->id),
             ],
-            'base_salary' => [
-                $position ? 'sometimes' : 'required',
-                'numeric',
-                'min:0',
-            ],
         ]);
     }
 

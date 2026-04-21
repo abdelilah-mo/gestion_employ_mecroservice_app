@@ -1,8 +1,15 @@
 import { useEffect, useState } from "react";
-import { createDepartment, extractCollection, getDepartments } from "../services/api";
+import {
+  createDepartment,
+  deleteDepartment,
+  extractCollection,
+  getDepartments,
+  updateDepartment,
+} from "../services/api";
 
 function AddDepartment() {
   const [name, setName] = useState("");
+  const [editingDepartmentId, setEditingDepartmentId] = useState(null);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,9 +41,16 @@ function AddDepartment() {
       setError("");
       setSuccess("");
 
-      await createDepartment({ name });
+      if (editingDepartmentId) {
+        await updateDepartment(editingDepartmentId, { name });
+        setSuccess("Department updated successfully.");
+      } else {
+        await createDepartment({ name });
+        setSuccess("Department created successfully.");
+      }
+
       setName("");
-      setSuccess("Department created successfully.");
+      setEditingDepartmentId(null);
       await loadDepartments();
     } catch (requestError) {
       setError(requestError.message);
@@ -45,13 +59,53 @@ function AddDepartment() {
     }
   }
 
+  async function handleDelete(departmentId) {
+    const confirmed = window.confirm("Delete this department?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setError("");
+      setSuccess("");
+      await deleteDepartment(departmentId);
+
+      if (editingDepartmentId === departmentId) {
+        setEditingDepartmentId(null);
+        setName("");
+      }
+
+      setSuccess("Department deleted successfully.");
+      await loadDepartments();
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }
+
+  function startEdit(department) {
+    setEditingDepartmentId(department.id);
+    setName(department.name);
+    setSuccess("");
+    setError("");
+  }
+
+  function resetForm() {
+    setEditingDepartmentId(null);
+    setName("");
+    setSuccess("");
+    setError("");
+  }
+
   return (
     <div className="row g-4">
       <div className="col-lg-5">
         <div className="page-card p-4 p-lg-5 h-100">
-          <h2 className="h3 mb-2">Add Department</h2>
+          <h3 className="h4 mb-2">
+            {editingDepartmentId ? "Edit Department" : "Add Department"}
+          </h3>
           <p className="text-secondary mb-4">
-            Departments feed the employee creation form and dashboard filters.
+            Departments are used in the employee form dropdown.
           </p>
 
           {error ? <div className="alert alert-danger">{error}</div> : null}
@@ -69,9 +123,21 @@ function AddDepartment() {
               />
             </div>
 
-            <button className="btn btn-primary" disabled={saving} type="submit">
-              {saving ? "Saving..." : "Create department"}
-            </button>
+            <div className="d-flex gap-2">
+              <button className="btn btn-primary" disabled={saving} type="submit">
+                {saving
+                  ? "Saving..."
+                  : editingDepartmentId
+                    ? "Update department"
+                    : "Create department"}
+              </button>
+
+              {editingDepartmentId ? (
+                <button className="btn btn-outline-secondary" onClick={resetForm} type="button">
+                  Cancel
+                </button>
+              ) : null}
+            </div>
           </form>
         </div>
       </div>
@@ -91,12 +157,13 @@ function AddDepartment() {
                 <tr>
                   <th>ID</th>
                   <th>Name</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td className="text-center py-5 text-secondary" colSpan="2">
+                    <td className="text-center py-5 text-secondary" colSpan="3">
                       Loading departments...
                     </td>
                   </tr>
@@ -104,7 +171,7 @@ function AddDepartment() {
 
                 {!loading && departments.length === 0 ? (
                   <tr>
-                    <td className="text-center py-5 text-secondary" colSpan="2">
+                    <td className="text-center py-5 text-secondary" colSpan="3">
                       No departments found.
                     </td>
                   </tr>
@@ -114,6 +181,24 @@ function AddDepartment() {
                   <tr key={department.id}>
                     <td>#{department.id}</td>
                     <td className="fw-semibold">{department.name}</td>
+                    <td className="text-end">
+                      <div className="d-inline-flex gap-2">
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => startEdit(department)}
+                          type="button"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => handleDelete(department.id)}
+                          type="button"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

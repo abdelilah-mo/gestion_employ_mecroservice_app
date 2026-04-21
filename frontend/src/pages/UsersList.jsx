@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { extractCollection, listUsers } from "../services/api";
 
-function UsersList({ currentUser }) {
+function UsersList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -16,15 +15,10 @@ function UsersList({ currentUser }) {
     try {
       setLoading(true);
       setError("");
-      setWarning("");
-
       const response = await listUsers();
       setUsers(extractCollection(response));
     } catch (requestError) {
-      setWarning(
-        `${requestError.message} Falling back to the currently authenticated user because the auth service does not expose a list endpoint yet.`
-      );
-      setUsers(currentUser ? [currentUser] : []);
+      setError(requestError.message);
     } finally {
       setLoading(false);
     }
@@ -34,8 +28,8 @@ function UsersList({ currentUser }) {
     <div className="row g-4">
       <div className="col-12 d-flex justify-content-between align-items-center">
         <div>
-          <h2 className="h3 mb-1">Users</h2>
-          <p className="text-secondary mb-0">User records from the authentication service.</p>
+          <h3 className="h4 mb-1">Users</h3>
+          <p className="text-secondary mb-0">User records from the auth service.</p>
         </div>
         <Link className="btn btn-primary" to="/users/new">
           Add User
@@ -44,7 +38,6 @@ function UsersList({ currentUser }) {
 
       <div className="col-12">
         {error ? <div className="alert alert-danger">{error}</div> : null}
-        {warning ? <div className="alert alert-warning">{warning}</div> : null}
 
         <div className="table-card p-4">
           <div className="table-responsive">
@@ -74,7 +67,7 @@ function UsersList({ currentUser }) {
                 ) : null}
 
                 {users.map((user) => (
-                  <tr key={user.id || user.email}>
+                  <tr key={user.id}>
                     <td className="fw-semibold">{user.name}</td>
                     <td>{user.email}</td>
                     <td>
@@ -83,7 +76,7 @@ function UsersList({ currentUser }) {
                           user.role === "admin" ? "badge-admin" : "badge-client"
                         } px-3 py-2`}
                       >
-                        {user.role || "client"}
+                        {user.role}
                       </span>
                     </td>
                   </tr>

@@ -1,24 +1,28 @@
+import { Link } from "react-router-dom";
+
 function EmployeeTable({
-  employees,
+  canManage,
   departments,
-  positions,
-  onDelete,
-  canDelete,
+  employees,
   loading,
+  onDelete,
+  positions,
 }) {
-  const departmentMap = Object.fromEntries(
-    departments.map((department) => [department.id, department.name])
-  );
-  const positionMap = Object.fromEntries(
-    positions.map((position) => [position.id, position.title || position.name])
-  );
+  const departmentMap = {};
+  const positionMap = {};
+
+  departments.forEach((department) => {
+    departmentMap[department.id] = department.name;
+  });
+
+  positions.forEach((position) => {
+    positionMap[position.id] = position.title;
+  });
 
   async function handleDelete(employeeId) {
-    const shouldDelete = window.confirm(
-      "Are you sure you want to delete this employee?"
-    );
+    const confirmed = window.confirm("Delete this employee?");
 
-    if (!shouldDelete) {
+    if (!confirmed) {
       return;
     }
 
@@ -27,16 +31,6 @@ function EmployeeTable({
 
   return (
     <div className="table-card p-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h2 className="h4 mb-1">Employees</h2>
-          <p className="text-secondary mb-0">Live data from the employee service.</p>
-        </div>
-        <span className="badge rounded-pill badge-soft px-3 py-2">
-          {employees.length} records
-        </span>
-      </div>
-
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0">
           <thead>
@@ -46,13 +40,21 @@ function EmployeeTable({
               <th>Email</th>
               <th>Department</th>
               <th>Position</th>
-              {canDelete ? <th className="text-end">Actions</th> : null}
+              {canManage ? <th className="text-end">Actions</th> : null}
             </tr>
           </thead>
           <tbody>
+            {loading ? (
+              <tr>
+                <td className="text-center py-5 text-secondary" colSpan={canManage ? 6 : 5}>
+                  Loading employees...
+                </td>
+              </tr>
+            ) : null}
+
             {!loading && employees.length === 0 ? (
               <tr>
-                <td className="text-center py-5 text-secondary" colSpan={canDelete ? 6 : 5}>
+                <td className="text-center py-5 text-secondary" colSpan={canManage ? 6 : 5}>
                   No employees found.
                 </td>
               </tr>
@@ -63,29 +65,29 @@ function EmployeeTable({
                 <td>#{employee.id}</td>
                 <td className="fw-semibold">{employee.name}</td>
                 <td>{employee.email}</td>
-                <td>{departmentMap[employee.department_id] || "Unknown"}</td>
-                <td>{positionMap[employee.position_id] || "Unknown"}</td>
-                {canDelete ? (
+                <td>{departmentMap[employee.department_id] || `#${employee.department_id}`}</td>
+                <td>{positionMap[employee.position_id] || `#${employee.position_id}`}</td>
+                {canManage ? (
                   <td className="text-end">
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDelete(employee.id)}
-                      type="button"
-                    >
-                      Delete
-                    </button>
+                    <div className="d-inline-flex gap-2">
+                      <Link
+                        className="btn btn-outline-primary btn-sm"
+                        to={`/employees/${employee.id}/edit`}
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleDelete(employee.id)}
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 ) : null}
               </tr>
             ))}
-
-            {loading ? (
-              <tr>
-                <td className="text-center py-5 text-secondary" colSpan={canDelete ? 6 : 5}>
-                  Loading employees...
-                </td>
-              </tr>
-            ) : null}
           </tbody>
         </table>
       </div>

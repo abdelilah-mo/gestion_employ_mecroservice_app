@@ -48,6 +48,10 @@ a {
   box-shadow: 12px 0 30px rgba(8, 17, 36, 0.18);
 }
 
+.sidebar-profile {
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .brand-mark {
   width: 48px;
   height: 48px;
@@ -95,6 +99,7 @@ a {
 .metric-card {
   border-radius: 20px;
   overflow: hidden;
+  height: 100%;
 }
 
 .metric-accent {
@@ -156,6 +161,11 @@ a {
 .content-wrap {
   flex: 1;
   min-width: 0;
+}
+
+.table td,
+.table th {
+  vertical-align: middle;
 }
 
 @media (max-width: 991.98px) {

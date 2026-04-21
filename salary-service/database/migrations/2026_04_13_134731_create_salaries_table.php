@@ -14,8 +14,7 @@ return new class extends Migration
         Schema::create('salaries', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('employee_id')->index();
-            $table->decimal('bonus', 12, 2);
-            $table->decimal('total_salary', 12, 2);
+            $table->decimal('amount', 12, 2);
             $table->timestamps();
         });
     }

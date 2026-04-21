@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RoleRoute from "./components/RoleRoute";
 import AppLayout from "./layout/AppLayout";
+import Employees from "./pages/Employees";
 import AddDepartment from "./pages/AddDepartment";
 import AddEmployee from "./pages/AddEmployee";
 import AddPosition from "./pages/AddPosition";
@@ -42,19 +43,15 @@ function App() {
       try {
         const currentUser = await fetchCurrentUser();
 
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          setUser(currentUser);
         }
-
-        setUser(currentUser);
       } catch (error) {
-        if (!isMounted) {
-          return;
+        if (isMounted) {
+          clearSession();
+          setTokenState(null);
+          setUser(null);
         }
-
-        clearSession();
-        setTokenState(null);
-        setUser(null);
       } finally {
         if (isMounted) {
           setAuthReady(true);
@@ -92,28 +89,23 @@ function App() {
 
       <Route element={<ProtectedRoute token={token} isReady={authReady} />}>
         <Route element={<AppLayout user={user} onLogout={handleLogout} />}>
-          <Route
-            index
-            element={<Dashboard title="Dashboard" user={user} showSummary />}
-          />
-          <Route
-            path="/employees"
-            element={<Dashboard title="Employees" user={user} showSummary={false} />}
-          />
+          <Route index element={<Dashboard user={user} />} />
+          <Route path="/employees" element={<Employees user={user} />} />
 
           <Route element={<RoleRoute user={user} allowedRoles={["admin"]} />}>
             <Route path="/employees/new" element={<AddEmployee />} />
-            <Route path="/users" element={<UsersList currentUser={user} />} />
+            <Route path="/employees/:employeeId/edit" element={<AddEmployee />} />
+            <Route path="/departments" element={<AddDepartment />} />
+            <Route path="/positions" element={<AddPosition />} />
+            <Route path="/users" element={<UsersList />} />
             <Route path="/users/new" element={<AddUser />} />
-            <Route path="/departments/new" element={<AddDepartment />} />
-            <Route path="/positions/new" element={<AddPosition />} />
           </Route>
         </Route>
       </Route>
 
       <Route
         path="*"
-        element={<Navigate to={token ? "/" : "/login"} replace />}
+        element={<Navigate replace to={token ? "/" : "/login"} />}
       />
     </Routes>
   );

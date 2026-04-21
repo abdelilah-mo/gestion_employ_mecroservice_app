@@ -40,11 +40,7 @@ return [
     ],
 
     'employee_service' => [
-        'url' => env('EMPLOYEE_SERVICE_URL', 'http://127.0.0.1:8001'),
-    ],
-
-    'position_service' => [
-        'url' => env('POSITION_SERVICE_URL', 'http://127.0.0.1:8003'),
+        'url' => env('EMPLOYEE_SERVICE_URL', 'http://127.0.0.1:8002'),
     ],
 
     'http' => [

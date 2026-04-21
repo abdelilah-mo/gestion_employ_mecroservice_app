@@ -50,12 +50,12 @@ return [
 'position_service' => [
     'url' => env('POSITION_SERVICE_URL', 'http://127.0.0.1:8003'),
 ],
-'salary_service' => [
-    'url' => 'http://127.0.0.1:8004',
-],
+    'salary_service' => [
+        'url' => env('SALARY_SERVICE_URL', 'http://127.0.0.1:8004'),
+    ],
 
-'http' => [
-    'timeout' => (int) env('SERVICE_HTTP_TIMEOUT', 5),
-],
+    'http' => [
+        'timeout' => (int) env('SERVICE_HTTP_TIMEOUT', 5),
+    ],
 
 ];

@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: abdelilahmo/auth-service:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_DATABASE
+              value: "company_auth_db"
+            - name: DB_USERNAME
+              value: "root"
+            - name: DB_PASSWORD
+              value: "root"

@@ -20,7 +20,10 @@ class PositionController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $position = Position::create($this->validatePosition($request));
+        $validated = $this->validatePosition($request);
+        $validated['base_salary'] = $validated['base_salary'] ?? 0;
+
+        $position = Position::create($validated);
 
         return response()->json($position, 201);
     }
@@ -54,6 +57,11 @@ class PositionController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('positions', 'title')->ignore($position?->id),
+            ],
+            'base_salary' => [
+                'sometimes',
+                'numeric',
+                'min:0',
             ],
         ]);
     }

@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->id();
             $table->string('title')->unique();
+            $table->double('base_salary')->default(0);
             $table->timestamps();
         });
     }

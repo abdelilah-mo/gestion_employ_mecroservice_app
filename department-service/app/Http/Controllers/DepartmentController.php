@@ -14,7 +14,7 @@ class DepartmentController extends Controller
         return response()->json(
             Department::query()
                 ->orderBy('name')
-                ->paginate($this->perPage($request))
+                ->get()
         );
     }
 
@@ -56,10 +56,5 @@ class DepartmentController extends Controller
                 Rule::unique('departments', 'name')->ignore($department?->id),
             ],
         ]);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

@@ -14,7 +14,7 @@ class PositionController extends Controller
         return response()->json(
             Position::query()
                 ->orderBy('title')
-                ->paginate($this->perPage($request))
+                ->get()
         );
     }
 
@@ -56,10 +56,5 @@ class PositionController extends Controller
                 Rule::unique('positions', 'title')->ignore($position?->id),
             ],
         ]);
-    }
-
-    private function perPage(Request $request): int
-    {
-        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

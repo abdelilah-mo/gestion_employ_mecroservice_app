@@ -16,7 +16,7 @@ class EmployeeController extends Controller
         return response()->json(
             Employee::query()
                 ->orderBy('name')
-                ->paginate($this->perPage($request))
+                ->get()
         );
     }
 
@@ -158,10 +158,5 @@ class EmployeeController extends Controller
         return [
             'Authorization' => $request->header('Authorization'),
         ];
-    }
-
-    private function perPage(Request $request): int
-    {
-        return max(1, min($request->integer('per_page', 15), 100));
     }
 }

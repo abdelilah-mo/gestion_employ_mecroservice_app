@@ -12,26 +12,30 @@ class GatewayController extends Controller
 {
     public function employees(Request $request, string $path = ''): JsonResponse
     {
-        return $this->forward($request, 'employee_service', $path);
+        return $this->forward($request, 'employee_service', 'employees', $path);
     }
 
     public function departments(Request $request, string $path = ''): JsonResponse
     {
-        return $this->forward($request, 'department_service', $path);
+        return $this->forward($request, 'department_service', 'departments', $path);
     }
 
     public function positions(Request $request, string $path = ''): JsonResponse
     {
-        return $this->forward($request, 'position_service', $path);
+        return $this->forward($request, 'position_service', 'positions', $path);
     }
 
     public function salaries(Request $request, string $path = ''): JsonResponse
     {
-        return $this->forward($request, 'salary_service', $path);
+        return $this->forward($request, 'salary_service', 'salaries', $path);
     }
 
-    private function forward(Request $request, string $serviceKey, string $path = ''): JsonResponse
-    {
+    private function forward(
+        Request $request,
+        string $serviceKey,
+        string $resource,
+        string $path = '',
+    ): JsonResponse {
         $options = [
             'query' => $request->query(),
         ];
@@ -45,7 +49,7 @@ class GatewayController extends Controller
                 ->withHeaders($this->headers($request))
                 ->send(
                     $request->method(),
-                    $this->serviceUrl($serviceKey, '/api/'.ltrim($path, '/')),
+                    $this->resourceUrl($serviceKey, $resource, $path),
                     $options
                 );
         } catch (ConnectionException $exception) {
@@ -60,6 +64,17 @@ class GatewayController extends Controller
     private function serviceUrl(string $serviceKey, string $path): string
     {
         return rtrim(config("services.{$serviceKey}.url"), '/').$path;
+    }
+
+    private function resourceUrl(string $serviceKey, string $resource, string $path = ''): string
+    {
+        $endpoint = '/api/'.$resource;
+
+        if ($path !== '') {
+            $endpoint .= '/'.ltrim($path, '/');
+        }
+
+        return $this->serviceUrl($serviceKey, $endpoint);
     }
 
     private function headers(Request $request): array

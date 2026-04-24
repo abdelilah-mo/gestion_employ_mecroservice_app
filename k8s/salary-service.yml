@@ -1,32 +1,41 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: auth
+  name: salary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: auth
+      app: salary
   template:
     metadata:
       labels:
-        app: auth
+        app: salary
     spec:
       containers:
-        - name: auth
-          image: abdelilahmo/auth-service:latest
+        - name: salary
+          image: abdelilahmo/salary-service:latest
           ports:
             - containerPort: 8000
           env:
             - name: DB_CONNECTION
-              value: "mysql"
+              value: "mysql"  
             - name: DB_HOST
               value: "mysql"
             - name: DB_DATABASE
-              value: "company_auth_db"
-            - name: DB_PORT
-              value: "3306"
+              value: "company_salary_db"
             - name: DB_USERNAME
               value: "root"
             - name: DB_PASSWORD
               value: "root"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: salary
+spec:
+  selector:
+    app: salary
+  ports:
+    - port: 8000
+      targetPort: 8000

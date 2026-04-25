@@ -43,6 +43,14 @@ spec:
           command: ["sh", "-c"]
           args:
             - php artisan config:clear && php artisan cache:clear && php artisan config:cache && php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8000
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
 ---
 apiVersion: v1
 kind: Service
@@ -55,4 +63,4 @@ spec:
     - port: 8000
       targetPort: 8000
       nodePort: 30000
-  type: NodePort
+  type: LoadBalancer
